@@ -22,8 +22,6 @@ export class MqttNamespaceConnection{
     private __read_request_topic__ = null;
     private __read_request_data__ = null;
 
-    private __connecting__: boolean = false;
-
     constructor(client_id:string){
 
         this.mqtt_client = null;
@@ -190,6 +188,11 @@ export class MqttNamespaceConnection{
             }
 
             this.read(key, args).then((data) => {
+                if(data === null){
+                    resolve(null);
+                    this.on_read_error(Error("Remote service error"))
+                }
+
                 let cleaned_data = this.__clean_read_data__(key, data);
                 resolve(cleaned_data);
             }).catch((err) => {
@@ -276,6 +279,7 @@ export class MqttNamespaceConnection{
         let request = args;
         // request["cleaned"] = true;
         request["response_code"] = response_code;
+        request["t"] = Date.now() / 1000;
 
         // get topic and message
         let topic = this.key_to_topic(key, "r");
@@ -330,8 +334,12 @@ export class MqttNamespaceConnection{
             // flatten
             // TODO
 
+            // report by exception
+            // TODO
+
             // check if not empty
             if(!this.__check_record_is_not_empty__(record)){ continue; }
+            
             // add to cleaned
             cleaned_data.push(record);
         }

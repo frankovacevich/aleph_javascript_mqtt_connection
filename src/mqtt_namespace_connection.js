@@ -7,7 +7,6 @@ var MqttNamespaceConnection = /** @class */ (function () {
         this.__unsubscribe_flags__ = {};
         this.__read_request_topic__ = null;
         this.__read_request_data__ = null;
-        this.__connecting__ = false;
         this.mqtt_client = null;
         // Main connection attributes
         this.client_id = client_id;
@@ -155,6 +154,10 @@ var MqttNamespaceConnection = /** @class */ (function () {
                 resolve(null);
             }
             _this.read(key, args).then(function (data) {
+                if (data === null) {
+                    resolve(null);
+                    _this.on_read_error(Error("Remote service error"));
+                }
                 var cleaned_data = _this.__clean_read_data__(key, data);
                 resolve(cleaned_data);
             })["catch"](function (err) {
@@ -233,6 +236,7 @@ var MqttNamespaceConnection = /** @class */ (function () {
         var request = args;
         // request["cleaned"] = true;
         request["response_code"] = response_code;
+        request["t"] = Date.now() / 1000;
         // get topic and message
         var topic = this.key_to_topic(key, "r");
         var message = this.data_to_mqtt_message(request);
@@ -288,6 +292,8 @@ var MqttNamespaceConnection = /** @class */ (function () {
                 record["t"] = (new Date(record["t"])).toISOString();
             }
             // flatten
+            // TODO
+            // report by exception
             // TODO
             // check if not empty
             if (!this.__check_record_is_not_empty__(record)) {
